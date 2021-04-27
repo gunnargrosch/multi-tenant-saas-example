@@ -1,0 +1,489 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ' '
+
+Parameters:
+  AppName:
+    Type: String
+    Description: Name of the application
+  ClientDomains:
+    Type: CommaDelimitedList
+    Description: Array of domains allowed to use this UserPool
+  AdminEmail:
+    Type: String
+    Description: Email address for administrator
+  AdminGivenName:
+    Type: String
+    Description: Given name for administrator
+  AdminFamilyName:
+    Type: String
+    Description: Family name for administrator
+
+Resources:
+  getAllProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: getAllProducts.handler
+      CodeUri: src/products/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ProductsTable
+      Environment:
+        Variables:
+          PRODUCT_TABLE: !Ref ProductsTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Auth:
+              Authorizer: GeneralAuth
+            Path: /products
+            Method: GET
+            ApiId: !Ref HttpApi
+  putProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: putProduct.handler
+      CodeUri: src/products/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref ProductsTable
+      Environment:
+        Variables:
+          PRODUCT_TABLE: !Ref ProductsTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Auth:
+              Authorizer: GeneralAuth
+            Path: /products
+            Method: POST
+            ApiId: !Ref HttpApi
+  updateProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: updateProduct.handler
+      CodeUri: src/products/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref ProductsTable
+      Environment:
+        Variables:
+          PRODUCT_TABLE: !Ref ProductsTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Auth:
+              Authorizer: GeneralAuth
+            Path: /products/{id}
+            Method: PUT
+            ApiId: !Ref HttpApi
+  deleteProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: deleteProduct.handler
+      CodeUri: src/products/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProductsTable
+      Environment:
+        Variables:
+          PRODUCT_TABLE: !Ref ProductsTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Auth:
+              Authorizer: GeneralAuth
+            Path: /products/{id}
+            Method: DELETE
+            ApiId: !Ref HttpApi
+  getAllUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: getAllUsers.handler
+      CodeUri: src/users/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - Fn::Join:
+                  - ''
+                  - - 'arn:aws:cognito-idp:*:*:userpool/'
+                    - Ref: UserPool
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Auth:
+              Authorizer: GeneralAuth
+            Path: /users
+            Method: GET
+            ApiId: !Ref HttpApi
+  putUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: putUser.handler
+      CodeUri: src/users/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminCreateUser
+              Resource:
+                - Fn::Join:
+                  - ''
+                  - - 'arn:aws:cognito-idp:*:*:userpool/'
+                    - Ref: UserPool
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Auth:
+              Authorizer: GeneralAuth
+            Path: /users
+            Method: POST
+            ApiId: !Ref HttpApi
+  updateUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: updateUser.handler
+      CodeUri: src/users/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminUpdateUserAttributes
+              Resource:
+                - Fn::Join:
+                  - ''
+                  - - 'arn:aws:cognito-idp:*:*:userpool/'
+                    - Ref: UserPool
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Auth:
+              Authorizer: GeneralAuth
+            Path: /users/{id}
+            Method: PUT
+            ApiId: !Ref HttpApi
+  deleteUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: deleteUser.handler
+      CodeUri: src/users/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminDeleteUser
+              Resource:
+                - Fn::Join:
+                  - ''
+                  - - 'arn:aws:cognito-idp:*:*:userpool/'
+                    - Ref: UserPool
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Auth:
+              Authorizer: GeneralAuth
+            Path: /users/{id}
+            Method: DELETE
+            ApiId: !Ref HttpApi
+  getAllTenantsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: getAllTenants.handler
+      CodeUri: src/tenants/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TenantTable
+      Environment:
+        Variables:
+          TENANT_TABLE: !Ref TenantTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Auth:
+              Authorizer: GeneralAuth
+            Path: /tenants
+            Method: GET
+            ApiId: !Ref HttpApi
+  putTenantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: putTenant.handler
+      CodeUri: src/tenants/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref TenantTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminCreateUser
+                - cognito-idp:CreateGroup
+                - cognito-idp:AdminAddUserToGroup
+              Resource:
+                - Fn::Join:
+                  - ''
+                  - - 'arn:aws:cognito-idp:*:*:userpool/'
+                    - Ref: UserPool
+      Environment:
+        Variables:
+          TENANT_TABLE: !Ref TenantTable
+          USER_POOL_ID: !Ref UserPool
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Auth:
+              Authorizer: GeneralAuth
+            Path: /tenants
+            Method: POST
+            ApiId: !Ref HttpApi
+  registerTenantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: putTenant.handler
+      CodeUri: src/tenants/
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 100
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref TenantTable
+      Environment:
+        Variables:
+          TENANT_TABLE: !Ref TenantTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /register
+            Method: POST
+            ApiId: !Ref HttpApi
+  
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions: 
+        - 
+          AttributeName: "tenant_id"
+          AttributeType: "S"
+        - 
+          AttributeName: "product_id"
+          AttributeType: "S"
+      KeySchema: 
+        - 
+          AttributeName: "tenant_id"
+          KeyType: "HASH"
+        - 
+          AttributeName: "product_id"
+          KeyType: "RANGE"
+      BillingMode: PAY_PER_REQUEST
+    DeletionPolicy: Delete
+  
+  TenantTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions: 
+        - 
+          AttributeName: "tenant_id"
+          AttributeType: "S"
+      KeySchema: 
+        - 
+          AttributeName: "tenant_id"
+          KeyType: "HASH"
+      BillingMode: PAY_PER_REQUEST
+    DeletionPolicy: Delete
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Auth:
+        Authorizers:
+          GeneralAuth:
+            IdentitySource: "$request.header.Authorization"
+            JwtConfiguration:
+              issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+              audience:
+                - !Ref UserPoolClient
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+        AllowHeaders: 
+          - '*'
+        AllowOrigins: !Ref ClientDomains
+
+  UserPool:
+    Type: AWS::Cognito::UserPool 
+    Properties: 
+      UserPoolName: !Sub ${AppName}-UserPool 
+      Policies: 
+        PasswordPolicy: 
+          MinimumLength: 8
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes: 
+        - email
+      Schema: 
+        - AttributeDataType: String 
+          Name: email 
+          Required: false
+          Mutable: true
+        - AttributeDataType: String 
+          Name: given_name 
+          Required: false
+          Mutable: true
+        - AttributeDataType: String 
+          Name: family_name 
+          Required: false
+          Mutable: true
+        - AttributeDataType: String 
+          Name: tenant_id 
+          Required: false
+          Mutable: false
+        - AttributeDataType: String 
+          Name: tier 
+          Required: false
+          Mutable: true
+        - AttributeDataType: String 
+          Name: company_name 
+          Required: false
+          Mutable: true
+        - AttributeDataType: String 
+          Name: role 
+          Required: false
+          Mutable: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient 
+    Properties: 
+      UserPoolId: !Ref UserPool 
+      ClientName: !Sub ${AppName}-UserPoolClient 
+      GenerateSecret: false
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs: !Ref ClientDomains
+      LogoutURLs: !Ref ClientDomains
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties: 
+      Domain: !Sub ${AppName}-${AWS::AccountId}
+      UserPoolId: !Ref UserPool
+
+  AdminUserGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties: 
+      GroupName: Admins
+      Description: Admin user group
+      Precedence: 0
+      UserPoolId: !Ref UserPool
+
+  AdminUser:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      Username: !Ref AdminEmail
+      DesiredDeliveryMediums: 
+        - EMAIL
+      ForceAliasCreation: true
+      UserAttributes: 
+        - Name: email
+          Value: !Ref AdminEmail
+        - Name: given_name
+          Value: !Ref AdminGivenName
+        - Name: family_name
+          Value: !Ref AdminFamilyName
+      UserPoolId: !Ref UserPool
+
+  AddUserToGroup:
+    Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    Properties: 
+      GroupName: !Ref AdminUserGroup
+      Username: !Ref AdminUser
+      UserPoolId: !Ref UserPool
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+
+  UserPoolId:
+    Description: "User pool ID"
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub ${AppName}:UserPoolId
+
+  UserPoolClientId:
+    Description: "Application client ID"
+    Value: !Ref UserPoolClient
+
+  AuthUrl:
+    Description: "URL used for authentication"
+    Value: !Sub https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com

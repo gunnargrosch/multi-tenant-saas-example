@@ -1,0 +1,10 @@
+.aws-sam
+.vscode
+node_modules
+/build
+samconfig.toml
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
